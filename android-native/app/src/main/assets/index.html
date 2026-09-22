@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>UMR Remote Controller</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>UMR Remote</h1>
+        <p>Landscape joystick controls</p>
+      </header>
+
+      <section class="landscape-warning" aria-live="polite">
+        Rotate device to landscape for best control layout.
+      </section>
+
+      <section class="joystick-layout" aria-label="Joystick controls">
+        <article class="joystick-card">
+          <h2>Move</h2>
+          <p>Forward / Back / Left / Right</p>
+          <div class="joystick" data-joystick="move" aria-label="Movement joystick">
+            <div class="joystick-ring"></div>
+            <div class="joystick-knob"></div>
+          </div>
+          <output class="joystick-readout" data-readout="move">Idle</output>
+        </article>
+
+        <article class="joystick-card">
+          <h2>Rotate</h2>
+          <p>Rotate Left / Rotate Right</p>
+          <div class="joystick" data-joystick="rotate" aria-label="Rotation joystick">
+            <div class="joystick-ring"></div>
+            <div class="joystick-knob"></div>
+          </div>
+          <output class="joystick-readout" data-readout="rotate">Idle</output>
+        </article>
+      </section>
+
+      <section class="status" aria-live="polite">
+        Last command: <span id="last-command">None</span>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

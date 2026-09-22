@@ -1,0 +1,165 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #22d3ee;
+  --ring: #334155;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1e293b, #0f172a 60%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+    "Open Sans", "Helvetica Neue", sans-serif;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.app {
+  width: min(100%, 860px);
+  background: color-mix(in srgb, var(--card) 86%, black);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.35);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.landscape-warning {
+  display: none;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--ring) 80%, black);
+}
+
+.joystick-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.joystick-card {
+  background: color-mix(in srgb, var(--ring) 70%, black);
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.joystick-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.joystick-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.joystick {
+  position: relative;
+  width: min(32vw, 220px);
+  aspect-ratio: 1;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.joystick-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 35%, var(--ring));
+  background: radial-gradient(circle at 35% 30%, #475569, #1f2937 68%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 42%, #94a3b8);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 60ms linear;
+}
+
+.joystick.active .joystick-knob {
+  background: color-mix(in srgb, var(--accent) 62%, #cbd5e1);
+}
+
+.joystick-readout {
+  min-height: 1.25rem;
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.status {
+  margin-top: 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+@media (orientation: portrait) {
+  .app {
+    width: min(100%, 470px);
+  }
+
+  .landscape-warning {
+    display: block;
+  }
+
+  .joystick-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .joystick {
+    width: min(60vw, 220px);
+  }
+}
+
+@media (max-width: 620px) and (orientation: landscape) {
+  .app {
+    padding: 14px;
+  }
+
+  .header {
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    margin-top: 2px;
+  }
+}

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">UMR Remote App</string>
+    <string name="last_command_format">Last command: %1$s</string>
+</resources>

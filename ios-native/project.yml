@@ -1,0 +1,45 @@
+name: UMRRemote
+options:
+  minimumXcodeGenVersion: 2.37.0
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    PRODUCT_BUNDLE_IDENTIFIER: com.umr.remote
+    TARGETED_DEVICE_FAMILY: "1,2"
+    DEVELOPMENT_TEAM: 92UQHWCN4D
+    CODE_SIGN_STYLE: Automatic
+targets:
+  UMRRemote:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: UMRRemote
+        excludes:
+          - Web/**
+    postBuildScripts:
+      - name: Copy Web Assets
+        script: |
+          set -euo pipefail
+          ROOT_DIR="${PROJECT_DIR}/.."
+          DEST_DIR="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Web"
+          mkdir -p "${DEST_DIR}"
+          cp "${ROOT_DIR}/index.html" "${DEST_DIR}/index.html"
+          cp "${ROOT_DIR}/styles.css" "${DEST_DIR}/styles.css"
+          cp "${ROOT_DIR}/app.js" "${DEST_DIR}/app.js"
+    info:
+      path: UMRRemote/Info.plist
+      properties:
+        CFBundleDisplayName: UMR Remote
+        NSBluetoothAlwaysUsageDescription: Connects to the Jetson Nano over Bluetooth to send robot control commands.
+        NSBluetoothPeripheralUsageDescription: Connects to the Jetson Nano over Bluetooth to send robot control commands.
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight

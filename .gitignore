@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Android / Gradle
+android-native/.gradle/
+android-native/build/
+android-native/app/build/
+android-native/local.properties
+android-native/.idea/
+android-native/captures/
+android-native/.externalNativeBuild/
+android-native/.cxx/
+*.iml
+*.apk
+*.aab
+
+# iOS / Xcode
+ios-native/build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.ipa
+*.dSYM.zip
+*.dSYM/
+
+# Editors
+.vscode/
+*.swp
