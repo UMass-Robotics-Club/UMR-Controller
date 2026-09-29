@@ -43,6 +43,9 @@ class MockControllerInterface:
     def __exit__(self, *_: object) -> None:
         self.close()
 
+    def connected(self) -> bool:
+        return self._start_time is not None
+
     def get_command(self) -> ControllerCommand:
         vx, vy, yaw = self._command
         return ControllerCommand(vx=vx, vy=vy, yaw=yaw)

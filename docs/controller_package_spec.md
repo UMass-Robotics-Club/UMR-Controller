@@ -7,6 +7,7 @@
 ```python
 controller = ControllerInterface(config)   # or MockControllerInterface(config) for testing
 controller.start()           # start listening for the phone over bluetooth
+controller.connected()       # -> True once the phone has sent its first message
 controller.get_command()     # -> latest ControllerCommand
 controller.estop_active()    # -> True/False
 controller.estop_status()    # what triggered it and when (for logging)

@@ -13,6 +13,10 @@ logging.basicConfig(level=logging.INFO)
 
 with ControllerInterface() as c:
     print("waiting for phone...")
+    while not c.connected():
+        time.sleep(0.1)
+    print("phone connected")
+
     while True:
         s = c.estop_status()
         if s.active:

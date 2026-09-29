@@ -105,6 +105,11 @@ class ControllerInterface:
 
     # data
 
+    def connected(self) -> bool:
+        """True once the phone has sent its first message since start()."""
+        with self._lock:
+            return self._last_msg_time is not None
+
     def get_command(self) -> ControllerCommand:
         with self._lock:
             return self._command
