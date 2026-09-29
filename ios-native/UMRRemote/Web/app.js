@@ -13,35 +13,23 @@ const ESTOP = {
 
 let estopSent = false;
 
+// x/y are analog values from -1 to 1 (how far the stick is pushed)
 const joystickState = {
-  move: { command: null },
-  rotate: { command: null }
+  move: { command: null, x: 0, y: 0 },
+  rotate: { command: null, x: 0, y: 0 }
 };
 
 let transmitTimer = null;
 
+// 2 decimals keeps the longest message, "(-0.99,-0.99,-0.99)", within one 20-byte BLE packet
+function formatAxis(value) {
+  return String(Number(value.toFixed(2)) || 0);
+}
+
 function commandToLegacyTuple() {
-  let x = 0;
-  let y = 0;
-  let z = 0;
-
-  if (joystickState.move.command === "left") {
-    x = -1;
-  } else if (joystickState.move.command === "right") {
-    x = 1;
-  }
-
-  if (joystickState.move.command === "forward") {
-    y = 1;
-  } else if (joystickState.move.command === "back") {
-    y = -1;
-  }
-
-  if (joystickState.rotate.command === "rotate-left") {
-    z = -1;
-  } else if (joystickState.rotate.command === "rotate-right") {
-    z = 1;
-  }
+  const x = formatAxis(joystickState.move.x);
+  const y = formatAxis(joystickState.move.y);
+  const z = formatAxis(joystickState.rotate.x);
 
   return `(${x},${y},${z})`;
 }
@@ -122,12 +110,12 @@ function createJoystick(type) {
 
   const engageZone = 0.34;
   const releaseZone = 0.24;
-  const axisSwitchBias = 0.18;
-  const maxRadiusFactor = 0.36;
+  const fullZone = 0.9; // counts as 100% slightly before the rim
+  // Rotate is a horizontal slider, so its knob can travel further
+  const maxRadiusFactor = type === "rotate" ? 1.0 : 0.36;
   const smoothing = 0.34;
   let activePointerId = null;
   let activeCommand = null;
-  let activeAxis = null;
   let targetX = 0;
   let targetY = 0;
   let renderedX = 0;
@@ -146,22 +134,13 @@ function createJoystick(type) {
     knob.style.transform = `translate(calc(-50% + ${xPercent * maxRadiusFactor}%), calc(-50% + ${yPercent * maxRadiusFactor}%))`;
   };
 
+  // Move can go diagonal; rotate only uses left/right
   const applyJoystickConstraints = (xNorm, yNorm) => {
     if (type === "rotate") {
       return { x: xNorm, y: 0 };
     }
 
-    let axis = activeAxis;
-    if (!axis) {
-      axis = Math.abs(xNorm) >= Math.abs(yNorm) ? "x" : "y";
-    } else if (axis === "x" && Math.abs(yNorm) > Math.abs(xNorm) + axisSwitchBias) {
-      axis = "y";
-    } else if (axis === "y" && Math.abs(xNorm) > Math.abs(yNorm) + axisSwitchBias) {
-      axis = "x";
-    }
-
-    activeAxis = axis;
-    return axis === "x" ? { x: xNorm, y: 0 } : { x: 0, y: yNorm };
+    return { x: xNorm, y: yNorm };
   };
 
   const animateKnob = () => {
@@ -196,8 +175,37 @@ function createJoystick(type) {
     animationId = requestAnimationFrame(animateKnob);
   };
 
-  const updateRemoteState = (command) => {
-    joystickState[type].command = command;
+  // Scale so the value starts at 0 at the dead zone edge and reaches 1 at fullZone
+  const toAnalog = (value) => {
+    const scaled = (Math.abs(value) - releaseZone) / (fullZone - releaseZone);
+    return Math.sign(value) * Math.min(1, Math.max(0, scaled));
+  };
+
+  const percent = (value) => `${Math.round(Math.abs(value) * 100)}%`;
+
+  const updateRemoteState = (command, xNorm = 0, yNorm = 0) => {
+    let x = 0;
+    let y = 0;
+
+    if (command) {
+      x = toAnalog(xNorm);
+      y = type === "move" ? -toAnalog(yNorm) : 0; // screen y points down, forward is +
+    }
+
+    joystickState[type] = { command, x, y };
+
+    if (command) {
+      const parts = [];
+      if (y !== 0) {
+        parts.push(`${y > 0 ? "forward" : "back"} ${percent(y)}`);
+      }
+      if (x !== 0) {
+        const side = x > 0 ? "right" : "left";
+        parts.push(`${type === "rotate" ? `rotate-${side}` : side} ${percent(x)}`);
+      }
+      setReadout(parts.length ? parts.join(" · ") : command);
+    }
+
     if (!estopSent) {
       updateLastCommandLabel();
     }
@@ -221,15 +229,9 @@ function createJoystick(type) {
     }
 
     if (type === "move") {
-      if (Math.abs(xNorm) >= deadZone) {
-        return xNorm > 0 ? "right" : "left";
-      }
-
-      if (Math.abs(yNorm) >= deadZone) {
-        return yNorm > 0 ? "back" : "forward";
-      }
-
-      return null;
+      const vertical = Math.abs(yNorm) >= releaseZone ? (yNorm > 0 ? "back" : "forward") : null;
+      const horizontal = Math.abs(xNorm) >= releaseZone ? (xNorm > 0 ? "right" : "left") : null;
+      return [vertical, horizontal].filter(Boolean).join("-") || null;
     }
 
     if (Math.abs(xNorm) < deadZone) {
@@ -246,6 +248,12 @@ function createJoystick(type) {
     const radius = rect.width / 2;
     const dx = (event.clientX - centerX) / radius;
     const dy = (event.clientY - centerY) / radius;
+
+    // Slider: only left/right counts, so drifting up or down doesn't shrink the value
+    if (type === "rotate") {
+      return { x: Math.max(-1, Math.min(1, dx)), y: 0 };
+    }
+
     const magnitude = Math.hypot(dx, dy);
 
     if (magnitude > 1) {
@@ -257,7 +265,6 @@ function createJoystick(type) {
 
   const reset = () => {
     root.classList.remove("active");
-    activeAxis = null;
     targetX = 0;
     targetY = 0;
     ensureAnimationLoop();
@@ -283,7 +290,7 @@ function createJoystick(type) {
     ensureAnimationLoop();
     const command = mapCommand(constrained.x, constrained.y);
     setCommand(command);
-    updateRemoteState(command);
+    updateRemoteState(command, constrained.x, constrained.y);
   });
 
   root.addEventListener("pointermove", (event) => {
@@ -300,7 +307,7 @@ function createJoystick(type) {
     ensureAnimationLoop();
     const command = mapCommand(constrained.x, constrained.y);
     setCommand(command);
-    updateRemoteState(command);
+    updateRemoteState(command, constrained.x, constrained.y);
   });
 
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {

@@ -67,7 +67,7 @@ UTF-8 text on the write characteristic `6E400002-B5A3-F393-E0A9-E50E24DCCA9E`.
 
 | Message | Meaning |
 | --- | --- |
-| `(x,y,z)` | joystick, every 50 ms |
+| `(x,y,z)` | joystick, every 50 ms. Each value -1 to 1 with up to 2 decimals, e.g. `(0,0.47,0)` |
 | `ESTOP` | E-STOP button, sent 5 times, 20 ms apart |
 
 Anything else gets logged and ignored.
