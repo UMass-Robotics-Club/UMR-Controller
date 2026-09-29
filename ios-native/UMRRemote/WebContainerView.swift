@@ -9,6 +9,11 @@ enum BLEConnectionState: Equatable {
     case unavailable
 }
 
+struct DiscoveredRobot: Identifiable, Equatable {
+    let id: UUID
+    let name: String
+}
+
 final class BLECommandBridge: NSObject, ObservableObject {
     static let shared = BLECommandBridge()
 
@@ -21,8 +26,12 @@ final class BLECommandBridge: NSObject, ObservableObject {
     private var writeCharacteristic: CBCharacteristic?
     private var pendingPayload: Data?
     private var hasStarted = false
+    private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
+    private var advertisedNames: [UUID: String] = [:]
 
     @Published private(set) var connectionState: BLEConnectionState = .searching
+    @Published private(set) var discoveredRobots: [DiscoveredRobot] = []
+    @Published private(set) var connectedRobotName: String?
 
     private override init() {
         super.init()
@@ -39,6 +48,36 @@ final class BLECommandBridge: NSObject, ObservableObject {
     func start() {
         DispatchQueue.main.async {
             self.startIfNeeded()
+        }
+    }
+
+    /// Connect to a robot the user picked from the list.
+    func connect(to robot: DiscoveredRobot) {
+        DispatchQueue.main.async {
+            guard let manager = self.centralManager,
+                  self.connectedPeripheral == nil,
+                  let peripheral = self.discoveredPeripherals[robot.id] else {
+                return
+            }
+
+            self.connectedPeripheral = peripheral
+            self.connectedRobotName = robot.name
+            self.connectionState = .connecting
+            manager.stopScan()
+            peripheral.delegate = self
+            manager.connect(peripheral, options: nil)
+        }
+    }
+
+    /// Clear the list and scan again.
+    func rescan() {
+        DispatchQueue.main.async {
+            guard self.connectedPeripheral == nil else {
+                return
+            }
+
+            self.centralManager?.stopScan()
+            self.startScan()
         }
     }
 
@@ -59,9 +98,13 @@ final class BLECommandBridge: NSObject, ObservableObject {
         }
 
         connectionState = .searching
+        discoveredPeripherals = [:]
+        advertisedNames = [:]
+        discoveredRobots = []
+        // Duplicates on so the scan response (which carries the robot name) is seen too
         manager.scanForPeripherals(
             withServices: [Self.serviceUUID],
-            options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
         )
     }
 
@@ -105,11 +148,38 @@ extension BLECommandBridge: CBCentralManagerDelegate {
             return
         }
 
-        connectedPeripheral = peripheral
-        connectionState = .connecting
-        central.stopScan()
-        peripheral.delegate = self
-        central.connect(peripheral, options: nil)
+        // Prefer the advertised name; peripheral.name is the host's cached device name.
+        // The advertised name can arrive in a later packet, so remember it once seen.
+        if let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String,
+           !advertisedName.isEmpty {
+            advertisedNames[peripheral.identifier] = advertisedName
+        }
+
+        let name = advertisedNames[peripheral.identifier]
+            ?? peripheral.name
+            ?? "Unknown robot"
+
+        discoveredPeripherals[peripheral.identifier] = peripheral
+        let robot = DiscoveredRobot(id: peripheral.identifier, name: name)
+
+        if let index = discoveredRobots.firstIndex(where: { $0.id == robot.id }) {
+            if discoveredRobots[index] != robot {
+                discoveredRobots[index] = robot
+                discoveredRobots.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            }
+        } else {
+            discoveredRobots.append(robot)
+            discoveredRobots.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+    }
+
+    func centralManager(_ central: CBCentralManager,
+                        didFailToConnect peripheral: CBPeripheral,
+                        error: Error?) {
+        connectedPeripheral = nil
+        connectedRobotName = nil
+        writeCharacteristic = nil
+        startScan()
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
@@ -122,6 +192,7 @@ extension BLECommandBridge: CBCentralManagerDelegate {
                         error: Error?) {
         if connectedPeripheral?.identifier == peripheral.identifier {
             connectedPeripheral = nil
+            connectedRobotName = nil
             writeCharacteristic = nil
         }
 

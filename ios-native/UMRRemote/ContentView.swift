@@ -31,9 +31,11 @@ struct ContentView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 18) {
-                ProgressView()
-                    .tint(.white)
-                    .scaleEffect(1.2)
+                if bleBridge.connectionState != .searching || bleBridge.discoveredRobots.isEmpty {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(1.2)
+                }
 
                 Text(statusTitle)
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
@@ -44,6 +46,10 @@ struct ContentView: View {
                     .foregroundStyle(.white.opacity(0.72))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 28)
+
+                if bleBridge.connectionState == .searching {
+                    robotList
+                }
 
                 if bleBridge.connectionState == .unavailable {
                     Text("Make sure Bluetooth is on and the robot or Mac receiver is advertising the BLE service.")
@@ -57,12 +63,48 @@ struct ContentView: View {
         }
     }
 
+    private var robotList: some View {
+        VStack(spacing: 10) {
+            ScrollView {
+                VStack(spacing: 10) {
+                    ForEach(bleBridge.discoveredRobots) { robot in
+                        Button {
+                            bleBridge.connect(to: robot)
+                        } label: {
+                            HStack {
+                                Image(systemName: "antenna.radiowaves.left.and.right")
+                                Text(robot.name)
+                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.white.opacity(0.5))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: 420, maxHeight: 260)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Button("Scan again") {
+                bleBridge.rescan()
+            }
+            .font(.system(size: 15, weight: .medium, design: .rounded))
+            .foregroundStyle(.white.opacity(0.72))
+        }
+    }
+
     private var statusTitle: String {
         switch bleBridge.connectionState {
         case .searching:
-            return "Searching for Robot"
+            return bleBridge.discoveredRobots.isEmpty ? "Searching for Robots" : "Choose a Robot"
         case .connecting:
-            return "Connecting"
+            return "Connecting to \(bleBridge.connectedRobotName ?? "Robot")"
         case .connected:
             return "Connected"
         case .unavailable:
@@ -73,9 +115,11 @@ struct ContentView: View {
     private var statusMessage: String {
         switch bleBridge.connectionState {
         case .searching:
-            return "Looking for your Mac test host or Jetson robot over Bluetooth Low Energy."
+            return bleBridge.discoveredRobots.isEmpty
+                ? "Looking for robots nearby over Bluetooth Low Energy."
+                : "Tap the robot you want to control."
         case .connecting:
-            return "Found a device. Finishing the BLE handshake now."
+            return "Finishing the BLE handshake now."
         case .connected:
             return ""
         case .unavailable:

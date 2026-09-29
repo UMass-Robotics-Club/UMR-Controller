@@ -43,6 +43,7 @@ body {
   border-radius: 24px;
   padding: 18px;
   box-shadow: 0 16px 35px rgba(0, 0, 0, 0.35);
+  position: relative;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   overflow: hidden;
@@ -77,7 +78,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .joystick-card {
@@ -86,6 +87,7 @@ body {
   padding: 14px;
   display: grid;
   justify-items: center;
+  align-content: center;
   gap: 8px;
 }
 
@@ -131,6 +133,20 @@ body {
   transition: transform 16ms linear;
 }
 
+.joystick[data-joystick="rotate"] {
+  width: clamp(170px, 34vmin, 280px);
+  aspect-ratio: 2.6;
+}
+
+.joystick[data-joystick="rotate"] .joystick-ring {
+  border-radius: 999px;
+}
+
+.joystick[data-joystick="rotate"] .joystick-knob {
+  width: auto;
+  height: 80%;
+}
+
 .joystick.active .joystick-knob {
   background: color-mix(in srgb, var(--accent) 62%, #cbd5e1);
   transition: none;
@@ -141,6 +157,38 @@ body {
   color: var(--text);
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.estop-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 10px 18px;
+  border: 3px solid #fecaca;
+  border-radius: 14px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.45);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.estop-button:active {
+  background: #b91c1c;
+}
+
+.estop-button:disabled {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  box-shadow: none;
+}
+
+.estopped .joystick {
+  opacity: 0.35;
 }
 
 .status {
@@ -161,16 +209,25 @@ body {
     padding: 14px;
   }
 
+  .app {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .header {
+    padding-top: 64px;
+  }
+
   .landscape-warning {
-    display: block;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text);
   }
 
-  .joystick-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .joystick {
-    width: clamp(125px, 32vmin, 200px);
+  .joystick-layout,
+  .status {
+    display: none;
   }
 }
 
