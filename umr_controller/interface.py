@@ -46,8 +46,8 @@ def parse_command(text: str, timestamp: float) -> Optional[ControllerCommand]:
 
 
 class ControllerInterface:
-    def __init__(self, config: Optional[ControllerConfig] = None) -> None:
-        self.config = config or ControllerConfig()
+    def __init__(self, config: ControllerConfig) -> None:
+        self.config = config
 
         self._lock = threading.Lock()
         self._command = ControllerCommand()

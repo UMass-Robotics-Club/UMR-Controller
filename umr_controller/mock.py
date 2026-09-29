@@ -22,7 +22,7 @@ class MockControllerInterface:
         estop_after_s: trigger the E-Stop this many seconds after start()
         estop_source: source reported when estop_after_s triggers
         """
-        self.config = config or ControllerConfig()
+        self.config = config or ControllerConfig(device_name="Mock")
         self._command = command
         self._estop_after_s = estop_after_s
         self._estop_source = estop_source

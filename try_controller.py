@@ -7,11 +7,12 @@ command 10 times a second until an E-Stop happens.
 import logging
 import time
 
-from umr_controller import ControllerInterface
+from umr_controller import ControllerConfig, ControllerInterface
+ROBOT_NAME = "Doggy"  # name shown in the phone app's robot list
 
 logging.basicConfig(level=logging.INFO)
 
-with ControllerInterface() as c:
+with ControllerInterface(ControllerConfig(device_name=ROBOT_NAME)) as c:
     print("waiting for phone...")
     while not c.connected():
         time.sleep(0.1)
