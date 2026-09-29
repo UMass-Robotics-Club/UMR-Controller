@@ -1,8 +1,17 @@
 const commandLabel = document.querySelector("#last-command");
+const estopButton = document.querySelector("#estop-button");
 
 const REMOTE_TRANSPORT = {
   sendIntervalMs: 50
 };
+
+const ESTOP = {
+  message: "ESTOP",
+  repeat: 5,
+  intervalMs: 20
+};
+
+let estopSent = false;
 
 const joystickState = {
   move: { command: null },
@@ -45,9 +54,7 @@ function updateLastCommandLabel() {
   commandLabel.textContent = commandToLegacyTuple();
 }
 
-function sendRemoteState() {
-  const payload = commandToLegacyTuple();
-
+function postPayload(payload) {
   const bridge = window.webkit?.messageHandlers?.remoteBLE;
   if (bridge) {
     bridge.postMessage({ payload });
@@ -60,8 +67,40 @@ function sendRemoteState() {
   );
 }
 
+function sendRemoteState() {
+  postPayload(commandToLegacyTuple());
+}
+
+function triggerEstop() {
+  if (estopSent) {
+    return;
+  }
+
+  estopSent = true;
+
+  // Stop joystick messages so nothing else goes out after the E-Stop
+  clearInterval(transmitTimer);
+  transmitTimer = null;
+
+  for (let i = 0; i < ESTOP.repeat; i += 1) {
+    setTimeout(() => postPayload(ESTOP.message), i * ESTOP.intervalMs);
+  }
+
+  console.log("[REMOTE] E-STOP sent");
+  document.body.classList.add("estopped");
+
+  if (estopButton) {
+    estopButton.textContent = "E-STOP SENT";
+    estopButton.disabled = true;
+  }
+
+  if (commandLabel) {
+    commandLabel.textContent = "E-STOP (reopen app to resume)";
+  }
+}
+
 function ensureTransmitLoop() {
-  if (transmitTimer) {
+  if (transmitTimer || estopSent) {
     return;
   }
 
@@ -159,7 +198,9 @@ function createJoystick(type) {
 
   const updateRemoteState = (command) => {
     joystickState[type].command = command;
-    updateLastCommandLabel();
+    if (!estopSent) {
+      updateLastCommandLabel();
+    }
   };
 
   const setCommand = (command) => {
@@ -227,6 +268,10 @@ function createJoystick(type) {
 
   root.addEventListener("pointerdown", (event) => {
     event.preventDefault();
+    if (estopSent) {
+      return;
+    }
+
     activePointerId = event.pointerId;
     root.classList.add("active");
     root.setPointerCapture(event.pointerId);
@@ -268,6 +313,11 @@ function createJoystick(type) {
     });
   });
 }
+
+estopButton?.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  triggerEstop();
+});
 
 createJoystick("move");
 createJoystick("rotate");
