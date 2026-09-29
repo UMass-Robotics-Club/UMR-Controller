@@ -6,6 +6,16 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+env/
+.env
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Android / Gradle
 android-native/.gradle/
